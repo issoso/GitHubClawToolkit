@@ -27,6 +27,7 @@ runs:
         ISSUE_NUMBER: ${{ inputs.issue_number }}
         COMMENT_ID: ${{ inputs.comment_id }}
         MESSAGE: ${{ inputs.message }}
+        GH_TOKEN: ${{ github.token }}
         REPOSITORY: ${{ github.repository }}
         BRAIN_META: ${{ inputs.brain_meta }}
       run: |
