@@ -11,11 +11,19 @@ inputs:
   missing_output_message:
     description: 找不到 output_file 時寫入 result_file 的 fallback 訊息
     required: false
-    default: 'Task failed, but output.jsonl was not found.'
+    default: '很抱歉，這個任務沒有順利完成。請通知開發人員檢查：執行記錄檔（output.jsonl）不存在，可能是代理程式啟動失敗或提前中止。'
   missing_session_error_message:
     description: 找不到 session.error 訊息時寫入 result_file 的 fallback 訊息
     required: false
-    default: 'Task failed, but no session.error message was found.'
+    default: '很抱歉，這個任務沒有順利完成。請通知開發人員檢查：代理程式結束時未留下任何錯誤說明，原因目前不明。'
+  message_prefix:
+    description: 成功擷取到 session.error 訊息時，寫在訊息上方的說明文字
+    required: false
+    default: '很抱歉，這個任務沒有順利完成。以下是系統回報的錯誤詳情，請提供給開發人員以利排查：'
+  message_suffix:
+    description: 成功擷取到 session.error 訊息時，寫在訊息下方的補充文字
+    required: false
+    default: '若您不確定如何處理，請直接將本頁面的截圖或網址傳送給開發人員。'
 
 runs:
   using: composite
@@ -27,6 +35,8 @@ runs:
         RESULT_FILE: ${{ inputs.result_file }}
         MISSING_OUTPUT_MESSAGE: ${{ inputs.missing_output_message }}
         MISSING_SESSION_ERROR_MESSAGE: ${{ inputs.missing_session_error_message }}
+        MESSAGE_PREFIX: ${{ inputs.message_prefix }}
+        MESSAGE_SUFFIX: ${{ inputs.message_suffix }}
       run: |
         set -euo pipefail
 
@@ -39,6 +49,8 @@ runs:
           const resultFile = process.env.RESULT_FILE;
           const missingOutputMessage = process.env.MISSING_OUTPUT_MESSAGE;
           const missingSessionErrorMessage = process.env.MISSING_SESSION_ERROR_MESSAGE;
+          const messagePrefix = process.env.MESSAGE_PREFIX;
+          const messageSuffix = process.env.MESSAGE_SUFFIX;
 
           if (!fs.existsSync(outputFile)) {
             fs.writeFileSync(resultFile, `${missingOutputMessage}\n`);
@@ -59,6 +71,8 @@ runs:
 
           fs.writeFileSync(
             resultFile,
-            `${message || missingSessionErrorMessage}\n`
+            message
+              ? `${messagePrefix}\n\n${message}\n\n${messageSuffix}\n`
+              : `${missingSessionErrorMessage}\n`
           );
         '
