@@ -57,15 +57,18 @@ IMAGE_DESCRIBER_DRY_RUN=1 node .agents/skills/gemini-image-describer/scripts/des
 
 ⚠️ skill 腳本位於 **repo 根目錄**。若 cwd 不在 repo root，先獨立執行 `git rev-parse --show-toplevel` 取得路徑，再 `cd` 到該路徑後執行。禁止使用 `$(...)` 語法。
 
+⚠️ **必須執行腳本**，不可用自身視覺能力直接回答圖片內容。所有圖片分析結果必須來自腳本輸出。
+
 1. 向使用者取得圖片 URL 或本地檔案路徑（若尚未提供）。
 2. 確認環境中已設定 `GEMINI_API_KEY`。
-3. 執行描述腳本：
+3. **必須**執行描述腳本，並將輸出直接寫入 `artifacts/{issue-comment-id}/result.md`：
    ```sh
-   node .agents/skills/gemini-image-describer/scripts/describe.js "<image-path-or-url>"
+   mkdir -p artifacts/{issue-comment-id}
+   node .agents/skills/gemini-image-describer/scripts/describe.js "<image-path-or-url>" > artifacts/{issue-comment-id}/result.md
    ```
 4. 若輸入為本地檔案路徑或 `file://` URL，腳本會自動轉換為 Base64 data URI。
-5. 將產生的描述結果呈現給使用者。
-6. 若腳本以非零代碼結束，回報錯誤訊息給使用者。
+5. 讀取 `artifacts/{issue-comment-id}/result.md` 並將內容呈現給使用者。
+6. 若腳本以非零代碼結束，回報 stderr 錯誤訊息，不可自行補充圖片描述。
 
 ## 限制
 
