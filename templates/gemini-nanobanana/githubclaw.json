@@ -10,5 +10,5 @@
   "homepage": "https://learn.duotify.com/courses/githubclaw",
   "modelVar": "GEMINI_NANOBANANA_MODEL",
   "requireEnv": ["GEMINI_API_KEY"],
-  "models": ["google/gemini-3-pro-image-preview"]
+  "models": ["gemini-3-pro-image-preview"]
 }
