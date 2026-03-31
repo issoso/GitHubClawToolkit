@@ -83,6 +83,13 @@ jobs:
         run: |
           echo "StatusUpdate event detected, performing status update..."
 
+      - name: 初始化輸出檔案
+        if: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.event_data != 'StatusUpdate') || inputs.event_data != 'StatusUpdate' }}
+        shell: bash
+        run: |
+          mkdir -p "artifacts/${{ env.COMMENT_ID }}"
+          touch "artifacts/${{ env.COMMENT_ID }}/result.md"
+
       - name: 執行任務
         if: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.event_data != 'StatusUpdate') || inputs.event_data != 'StatusUpdate' }}
         id: summarize

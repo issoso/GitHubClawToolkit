@@ -8,10 +8,6 @@ inputs:
   result_file:
     description: 失敗摘要輸出檔路徑
     required: true
-  missing_output_message:
-    description: 找不到 output_file 時寫入 result_file 的 fallback 訊息
-    required: false
-    default: '很抱歉，這個任務沒有順利完成。請通知開發人員檢查：執行記錄檔（output.jsonl）不存在，可能是代理程式啟動失敗或提前中止。'
   missing_session_error_message:
     description: 找不到 session.error 訊息時寫入 result_file 的 fallback 訊息
     required: false
@@ -28,6 +24,10 @@ inputs:
     description: 當輸出檔中偵測到認證失敗錯誤時寫入 result_file 的訊息
     required: false
     default: "看起來 Copilot CLI 無法執行，可能是以下原因：\n- 尚未設定 COPILOT_GITHUB_TOKEN 變數\n- 已設定，但金鑰已過期或失效\n\n建議檢查一下相關設定，或重新產生一組新的金鑰後再試一次。"
+  google_quota_exceeded_message:
+    description: 當輸出檔中偵測到 Google 服務回傳 429（配額超限）時寫入 result_file 的訊息
+    required: false
+    default: "很抱歉，這個任務沒有順利完成。\n\n**發生了什麼事？**\nGoogle API 回傳了 429（Too Many Requests）。這表示目前的 API 金鑰請求次數已達到 Google 設定的配額上限，Google 暫時拒絕了這次請求。\n\n**您現在可以：**\n- 等幾分鐘後重新指派這個 issue，讓任務重跑一次\n- 若持續發生，請通知開發人員至 Google Cloud Console 檢查配額用量，或考慮升級 API 方案"
 
 runs:
   using: composite
@@ -37,11 +37,11 @@ runs:
       env:
         OUTPUT_FILE: ${{ inputs.output_file }}
         RESULT_FILE: ${{ inputs.result_file }}
-        MISSING_OUTPUT_MESSAGE: ${{ inputs.missing_output_message }}
         MISSING_SESSION_ERROR_MESSAGE: ${{ inputs.missing_session_error_message }}
         MESSAGE_PREFIX: ${{ inputs.message_prefix }}
         MESSAGE_SUFFIX: ${{ inputs.message_suffix }}
         NO_AUTH_MESSAGE: ${{ inputs.no_auth_message }}
+        GOOGLE_QUOTA_EXCEEDED_MESSAGE: ${{ inputs.google_quota_exceeded_message }}
       run: |
         set -euo pipefail
 
@@ -52,17 +52,16 @@ runs:
 
           const outputFile = process.env.OUTPUT_FILE;
           const resultFile = process.env.RESULT_FILE;
-          const missingOutputMessage = process.env.MISSING_OUTPUT_MESSAGE;
           const missingSessionErrorMessage = process.env.MISSING_SESSION_ERROR_MESSAGE;
           const messagePrefix = process.env.MESSAGE_PREFIX;
           const messageSuffix = process.env.MESSAGE_SUFFIX;
 
-          if (!fs.existsSync(outputFile)) {
-            fs.writeFileSync(resultFile, `${missingOutputMessage}\n`);
+          const content = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, "utf8") : "";
+
+          if (content.includes("429")) {
+            fs.writeFileSync(resultFile, `${process.env.GOOGLE_QUOTA_EXCEEDED_MESSAGE}\n`);
             process.exit(0);
           }
-
-          const content = fs.readFileSync(outputFile, "utf8");
 
           if (content.includes("Error: No authentication information found.")) {
             fs.writeFileSync(resultFile, `${process.env.NO_AUTH_MESSAGE}\n`);

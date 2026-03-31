@@ -84,6 +84,13 @@ jobs:
         run: |
           echo "StatusUpdate event detected, performing status update..."
 
+      - name: 初始化輸出檔案
+        if: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.event_data != 'StatusUpdate') || inputs.event_data != 'StatusUpdate' }}
+        shell: bash
+        run: |
+          mkdir -p "artifacts/${{ env.COMMENT_ID }}"
+          touch "artifacts/${{ env.COMMENT_ID }}/result.md"
+
       # ── 執行內容摘要任務 ──────────────────────────────────────────────────
       # 從 issue.md 讀取目標 URL 或檔案路徑，使用 GoogleGenAI SDK 生成摘要並儲存到 artifacts 目錄。
       - name: 執行任務

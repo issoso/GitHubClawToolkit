@@ -97,6 +97,13 @@ jobs:
         run: |
           echo "StatusUpdate event detected, performing status update..."
 
+      - name: 初始化輸出檔案
+        if: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.event_data != 'StatusUpdate') || inputs.event_data != 'StatusUpdate' }}
+        shell: bash
+        run: |
+          mkdir -p "artifacts/${{ env.COMMENT_ID }}"
+          touch "artifacts/${{ env.COMMENT_ID }}/output.jsonl"
+
       - name: 執行任務
         if: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.event_data != 'StatusUpdate') || inputs.event_data != 'StatusUpdate' }}
         id: codex_task
@@ -105,8 +112,7 @@ jobs:
           CODEX_HOME: ".codex"
           GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
         run: |
-          mkdir -p "artifacts/${{ env.COMMENT_ID }}"
-          codex exec --yolo "目前 issue-comment-id 為： ${{ env.COMMENT_ID }} ， $(cat issue.md)" 2> artifacts/${{ env.COMMENT_ID }}/error.log |tee artifacts/${{ env.COMMENT_ID }}/output.jsonl
+          codex exec --yolo "目前 issue-comment-id 為： ${{ env.COMMENT_ID }} ， $(cat issue.md)" 2>&1 | tee artifacts/${{ env.COMMENT_ID }}/output.jsonl
 
       # 推送結果到 issue branch。
       - name: 推送結果
@@ -119,7 +125,7 @@ jobs:
         if: failure() && steps.codex_task.conclusion == 'failure'
         uses: duotify/GitHubClawToolkit/actions/error-handler-action@v1.1.1
         with:
-          output_file: artifacts/${{ env.COMMENT_ID }}/error.log
+          output_file: artifacts/${{ env.COMMENT_ID }}/output.jsonl
           result_file: artifacts/${{ env.COMMENT_ID }}/result.md
 
 

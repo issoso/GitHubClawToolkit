@@ -86,6 +86,13 @@ jobs:
         run: |
           echo "StatusUpdate event detected, performing status update..."
 
+      - name: 初始化輸出檔案
+        if: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.event_data != 'StatusUpdate') || inputs.event_data != 'StatusUpdate' }}
+        shell: bash
+        run: |
+          mkdir -p "artifacts/${{ env.COMMENT_ID }}"
+          touch "artifacts/${{ env.COMMENT_ID }}/output.txt"
+
       # ── 執行圖片生成任務 ──────────────────────────────────────────────────
       # 從 issue.md 讀取提示詞，使用 GoogleGenAI SDK 呼叫 Imagen API 生成圖片並儲存到 artifacts 目錄。
       - name: 執行任務

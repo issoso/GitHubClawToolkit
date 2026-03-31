@@ -98,6 +98,13 @@ jobs:
         run: |
           echo "StatusUpdate event detected, performing status update..."
 
+      - name: 初始化輸出檔案
+        if: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.event_data != 'StatusUpdate') || inputs.event_data != 'StatusUpdate' }}
+        shell: bash
+        run: |
+          mkdir -p "artifacts/${{ env.COMMENT_ID }}"
+          touch "artifacts/${{ env.COMMENT_ID }}/output.jsonl"
+
       - name: 執行任務
         if: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.event_data != 'StatusUpdate') || inputs.event_data != 'StatusUpdate' }}
         id: copilot_task
@@ -107,11 +114,9 @@ jobs:
           COPILOT_HOME: ".copilot"
           GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
         run: |
-          mkdir -p "artifacts/${{ env.COMMENT_ID }}"
           copilot -p "目前 issue-comment-id 為： ${{ env.COMMENT_ID }} ， $(cat issue.md)" \
           --yolo --stream off --continue --output-format json \
-          > artifacts/${{ env.COMMENT_ID }}/output.jsonl \
-          2> artifacts/${{ env.COMMENT_ID }}/error.log
+          > artifacts/${{ env.COMMENT_ID }}/output.jsonl 2>&1
 
       # 推送結果到 issue branch。
       - name: 推送結果
@@ -124,7 +129,7 @@ jobs:
         if: failure() && steps.copilot_task.conclusion == 'failure'
         uses: duotify/GitHubClawToolkit/actions/error-handler-action@v1.1.1
         with:
-          output_file: artifacts/${{ env.COMMENT_ID }}/error.log
+          output_file: artifacts/${{ env.COMMENT_ID }}/output.jsonl
           result_file: artifacts/${{ env.COMMENT_ID }}/result.md
 
 
