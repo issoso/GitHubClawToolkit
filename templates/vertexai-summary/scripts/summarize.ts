@@ -72,8 +72,8 @@ function buildPrompt(userPrompt: string, contextJsonl: string): string {
 }
 
 async function main(): Promise<void> {
-  const apiKey = normalizeText(process.env.VERTEXAI_API_KEY);
-  if (!apiKey) throw new Error('缺少 VERTEXAI_API_KEY');
+  const apiKey = normalizeText(process.env.VERTEXAI_SUMMARY_API_KEY || process.env.VERTEXAI_API_KEY);
+  if (!apiKey) throw new Error('缺少 VERTEXAI_SUMMARY_API_KEY');
 
   const promptFile = process.env.PROMPT_FILE;
   if (!promptFile) throw new Error('缺少 PROMPT_FILE 環境變數');

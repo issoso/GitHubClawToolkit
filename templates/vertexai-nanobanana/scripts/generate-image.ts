@@ -88,18 +88,17 @@ function buildUserPrompt(params: {
 }
 
 async function main(): Promise<void> {
-  const apiKey = normalizeText(process.env.VERTEXAI_API_KEY);
-  if (!apiKey) throw new Error('缺少 VERTEXAI_API_KEY');
+  const apiKey = normalizeText(process.env.VERTEXAI_NANOBANANA_API_KEY || process.env.VERTEXAI_API_KEY);
+  if (!apiKey) throw new Error('缺少 VERTEXAI_NANOBANANA_API_KEY');
 
   const promptFile = process.env.PROMPT_FILE;
   if (!promptFile) throw new Error('缺少 PROMPT_FILE 環境變數');
 
   const issueDir = process.env.ISSUE_DIR;
   if (!issueDir) throw new Error('缺少 ISSUE_DIR 環境變數');
-  const issueWorktree = process.env.ISSUE_WORKTREE ? path.resolve(process.env.ISSUE_WORKTREE) : null;
 
   const namePrefix = normalizeText(process.env.NAME_PREFIX) || 'image';
-  const model = normalizeText(process.env.NANOBANANA_MODEL) || 'google/gemini-3-pro-image-preview';
+  const model = normalizeText(process.env.VERTEXAI_NANOBANANA_MODEL || process.env.NANOBANANA_MODEL) || 'google/gemini-3-pro-image-preview';
   const userPrompt = await readUserPrompt(promptFile);
   const contextJsonlPath = await resolveContextJsonlPath();
   const contextJsonl = await readContextJsonl(contextJsonlPath);
@@ -118,6 +117,7 @@ async function main(): Promise<void> {
     model,
     config: {
       systemInstruction: systemPrompt,
+      tools: [{ googleSearch: {} }],
     },
     contents: [{
       role: 'user',
@@ -153,9 +153,7 @@ async function main(): Promise<void> {
     const extension = mimeToExtension(image.mimeType);
     const filePath = path.join(resolvedIssueDir, `${namePrefix}-${idx}${extension}`);
     await writeFile(filePath, Buffer.from(image.data, 'base64'));
-    const relativePath = issueWorktree && filePath.startsWith(issueWorktree + path.sep)
-      ? path.relative(issueWorktree, filePath)
-      : path.relative(process.cwd(), filePath);
+    const relativePath = path.relative(process.cwd(), filePath);
     savedFiles.push(relativePath);
     console.log(`Saved: ${relativePath}`);
     idx += 1;

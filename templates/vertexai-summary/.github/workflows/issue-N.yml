@@ -2,38 +2,38 @@
 # 使用 Vertex AI 模型（內嵌 Node.js 腳本），從 artifacts/<comment-id>/user.md 讀取 user prompt，並參考根目錄 jsonl 上下文，
 # 生成 Markdown 摘要並 commit 到 issue branch，最後回寫 issue comment。
 #
-# 認證模式：僅支援 Vertex AI API Key（VERTEXAI_API_KEY secret）。
-name: '執行小龍蝦任務 #N'
+# 認證模式：僅支援 Vertex AI API Key（VERTEXAI_SUMMARY_API_KEY secret）。
+name: "執行小龍蝦任務 #N"
 
 on:
   workflow_dispatch:
     inputs:
       issue_number:
-        description: 'GitHub issue number to process'
+        description: "GitHub issue number to process"
         required: true
         type: string
       comment_id:
-        description: 'Existing issue comment ID to reuse for progress updates'
+        description: "Existing issue comment ID to reuse for progress updates"
         required: false
         type: string
       user_comment_id:
-        description: 'User issue comment ID used to locate artifacts/{user_comment_id}/user.md'
+        description: "User issue comment ID used to locate artifacts/{user_comment_id}/user.md"
         required: false
         type: string
       event_source:
-        description: 'Who is triggering this workflow: cron or issue'
+        description: "Who is triggering this workflow: cron or issue"
         required: false
         type: choice
-        default: ''
+        default: ""
         options:
-          - ''
+          - ""
           - cron
           - issue
       event_data:
-        description: 'Additional data related to the event that triggered this workflow'
+        description: "Additional data related to the event that triggered this workflow"
         required: false
         type: string
-        default: ''
+        default: ""
   repository_dispatch:
     types: [summarize-content]
 
@@ -54,7 +54,7 @@ env:
   ISSUE_BRANCH: "issue-${{ github.event_name == 'repository_dispatch' && github.event.client_payload.issue_number || inputs.issue_number }}"
   SUMMARY_MODEL: "${{ vars.VERTEXAI_SUMMARY_MODEL || 'google/gemini-2.5-flash' }}"
   BRAIN_META: '<!-- githubclaw-brain-result: {"source":"githubclaw-worker-brain"} -->'
-  VERTEXAI_API_KEY: "${{ secrets.VERTEXAI_API_KEY }}"
+  VERTEXAI_SUMMARY_API_KEY: "${{ secrets.VERTEXAI_SUMMARY_API_KEY }}"
 
 jobs:
   run-summarize-content:
@@ -89,7 +89,7 @@ jobs:
         id: summarize
         shell: bash
         env:
-          VERTEXAI_API_KEY: ${{ env.VERTEXAI_API_KEY }}
+          VERTEXAI_SUMMARY_API_KEY: ${{ env.VERTEXAI_SUMMARY_API_KEY }}
           VERTEXAI_SUMMARY_MODEL: ${{ env.SUMMARY_MODEL }}
           ISSUE_DIR: "./artifacts/${{ env.COMMENT_ID }}"
           SYSTEM_PROMPT_FILE: "./SYSTEM.md"

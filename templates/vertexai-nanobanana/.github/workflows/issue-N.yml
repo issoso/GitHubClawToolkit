@@ -2,7 +2,7 @@
 # 使用 Vertex AI 模型（內嵌 Node.js 腳本），從 artifacts/<comment-id>/user.md 讀取 user prompt，並參考根目錄 jsonl 上下文，
 # 生成圖片並 commit 到 issue branch，最後回寫 issue comment。
 #
-# 認證模式：僅支援 Vertex AI API Key（VERTEXAI_API_KEY secret）。
+# 認證模式：僅支援 Vertex AI API Key（VERTEXAI_NANOBANANA_API_KEY secret）。
 name: '執行小龍蝦任務 #N'
 
 on:
@@ -53,7 +53,7 @@ env:
   USER_COMMENT_ID: "${{ github.event_name == 'repository_dispatch' && github.event.client_payload.user_comment_id || inputs.user_comment_id }}"
   ISSUE_BRANCH: "issue-${{ github.event_name == 'repository_dispatch' && github.event.client_payload.issue_number || inputs.issue_number }}"
   MODEL: "${{ vars.VERTEXAI_NANOBANANA_MODEL || 'google/gemini-3-pro-image-preview' }}"
-  VERTEXAI_API_KEY: "${{ secrets.VERTEXAI_API_KEY }}"
+  VERTEXAI_NANOBANANA_API_KEY: "${{ secrets.VERTEXAI_NANOBANANA_API_KEY }}"
 
 jobs:
   run-create-image:
@@ -88,8 +88,8 @@ jobs:
         id: generate
         shell: bash
         env:
-          VERTEXAI_API_KEY: ${{ env.VERTEXAI_API_KEY }}
-          NANOBANANA_MODEL: ${{ env.MODEL }}
+          VERTEXAI_NANOBANANA_API_KEY: ${{ env.VERTEXAI_NANOBANANA_API_KEY }}
+          VERTEXAI_NANOBANANA_MODEL: ${{ env.MODEL }}
           ISSUE_DIR: "./artifacts/${{ env.COMMENT_ID }}"
           SYSTEM_PROMPT_FILE: "./SYSTEM.md"
           TEMPLATE_ROOT: "."
@@ -113,7 +113,7 @@ jobs:
           fi
 
           echo "::notice::將使用 ${PROMPT_FILE} 作為 user prompt"
-          output="$(PROMPT_FILE="${PROMPT_FILE}" CONTEXT_JSONL_FILE="${context_jsonl_file}" SYSTEM_PROMPT_FILE="${SYSTEM_PROMPT_FILE}" TEMPLATE_ROOT="${TEMPLATE_ROOT}" ISSUE_DIR="${ISSUE_DIR}" NAME_PREFIX="${NAME_PREFIX}" NANOBANANA_MODEL="${NANOBANANA_MODEL}" bun run "${GENERATE_SCRIPT}")"
+          output="$(PROMPT_FILE="${PROMPT_FILE}" CONTEXT_JSONL_FILE="${context_jsonl_file}" SYSTEM_PROMPT_FILE="${SYSTEM_PROMPT_FILE}" TEMPLATE_ROOT="${TEMPLATE_ROOT}" ISSUE_DIR="${ISSUE_DIR}" NAME_PREFIX="${NAME_PREFIX}" VERTEXAI_NANOBANANA_API_KEY="${VERTEXAI_NANOBANANA_API_KEY}" VERTEXAI_NANOBANANA_MODEL="${VERTEXAI_NANOBANANA_MODEL}" bun run "${GENERATE_SCRIPT}")"
           echo "${output}"
 
           saved_files="$(echo "${output}" | grep '^Saved: ' | sed 's/^Saved: //' | paste -sd ',' -)"

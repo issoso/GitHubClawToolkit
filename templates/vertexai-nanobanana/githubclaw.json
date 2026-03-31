@@ -1,0 +1,19 @@
+{
+  "name": "Vertex AI Nanobanana",
+  "tagline": "Vertex AI 圖片生成範本，透過 Issue 觸發 AI 繪圖工作流程",
+  "description": "Vertex AI Nanobanana 範本提供完整的 GitHub Actions 工作流程，透過 Issue 觸發 Vertex AI 模型進行 AI 圖片生成。支援自訂模型名稱，產出結果自動存入 artifacts 目錄，適合需要批次或自動化圖片生成的情境。",
+  "category": "template",
+  "tags": [
+    "vertex-ai",
+    "nanobanana",
+    "image-generation",
+    "workflow"
+  ],
+  "version": "1.0.0",
+  "support_url": "https://github.com/duotify/GitHubClawToolkit/issues",
+  "homepage": "https://learn.duotify.com/courses/githubclaw",
+  "modelVar": "VERTEXAI_NANOBANANA_MODEL",
+  "requiredEnv": ["VERTEXAI_NANOBANANA_API_KEY"],
+  "models": ["google/gemini-3-pro-image-preview"],
+  "apiFormat": "vertexai"
+}

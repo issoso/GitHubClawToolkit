@@ -1,0 +1,20 @@
+{
+  "name": "Vertex AI Summary",
+  "tagline": "Vertex AI 內容摘要範本，透過 Issue 觸發自動摘要工作流程",
+  "description": "Vertex AI Summary 範本提供完整的 GitHub Actions 工作流程，透過 Issue 觸發 Vertex AI 模型對內容進行自動摘要。產出繁體中文摘要並存入 artifacts 目錄，適合需要批次或自動化內容摘要的情境。",
+  "category": "template",
+  "tags": [
+    "vertex-ai",
+    "summary",
+    "workflow",
+    "content-analysis"
+  ],
+  "need_model": true,
+  "version": "1.0.0",
+  "support_url": "https://github.com/duotify/GitHubClawToolkit/issues",
+  "homepage": "https://learn.duotify.com/courses/githubclaw",
+  "modelVar": "VERTEXAI_SUMMARY_MODEL",
+  "requiredEnv": ["VERTEXAI_SUMMARY_API_KEY"],
+  "models": ["google/gemini-2.5-flash"],
+  "apiFormat": "vertexai"
+}
