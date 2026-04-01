@@ -109,7 +109,7 @@ jobs:
         env:
           CODEX_HOME: ".codex"
         run: |
-          codex exec --yolo "{issue-comment-id}=${{ env.COMMENT_ID }}\n\n$(cat artifacts/${{ env.USER_COMMENT_ID }}/user.md)" 2>&1 | tee artifacts/${{ env.COMMENT_ID }}/output.jsonl
+          codex exec --yolo "請將最終結果寫入 artifacts/${{ env.COMMENT_ID }}/result.md 。我的提示詞為: $(cat artifacts/${{ env.USER_COMMENT_ID }}/user.md)" 2>&1 | tee artifacts/${{ env.COMMENT_ID }}/output.jsonl
 
       # 推送結果到 issue branch。
       - name: 推送結果
