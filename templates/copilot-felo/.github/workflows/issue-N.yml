@@ -91,7 +91,7 @@ jobs:
 
       # 安裝 GitHub Copilot CLI
       - name: Install GitHub Copilot CLI
-        run: npm install -g @github/copilot@${{ vars.COPILOT_CLI_VERSION || '1.0.14' }}
+        run: npm install -g @github/copilot@${{ vars.COPILOT_CLI_VERSION || '1.0.18' }}
 
       - name: 狀態更新處理
         if: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.event_data == 'StatusUpdate') || inputs.event_data == 'StatusUpdate' }}
@@ -115,13 +115,52 @@ jobs:
           COPILOT_HOME: ".copilot"
           FELO_API_KEY: ${{ env.FELO_API_KEY }}
         run: |
-          mkdir -p "artifacts/${{ env.COMMENT_ID }}"
+          RAW_ISSUE_NUMBER='${{ env.ISSUE_NUMBER }}'
+          RAW_COMMENT_ID='${{ env.COMMENT_ID }}'
+          RAW_USER_COMMENT_ID='${{ env.USER_COMMENT_ID }}'
 
-          npx -y @github/copilot@${{ vars.COPILOT_CLI_VERSION || '1.0.14' }} \
-            -p "請將最終結果寫入 artifacts/${{ env.COMMENT_ID }}/result.md 。我的提示詞為: $(cat \"artifacts/${{ env.USER_COMMENT_ID }}/user.md\")" \
+          ISSUE_NUMBER="${RAW_ISSUE_NUMBER%\"}"
+          ISSUE_NUMBER="${ISSUE_NUMBER#\"}"
+          COMMENT_ID="${RAW_COMMENT_ID%\"}"
+          COMMENT_ID="${COMMENT_ID#\"}"
+          USER_COMMENT_ID="${RAW_USER_COMMENT_ID%\"}"
+          USER_COMMENT_ID="${USER_COMMENT_ID#\"}"
+
+          if [[ -z "$COMMENT_ID" || -z "$USER_COMMENT_ID" ]]; then
+            echo "COMMENT_ID or USER_COMMENT_ID is missing"
+            exit 1
+          fi
+
+          mkdir -p "artifacts/${COMMENT_ID}"
+
+          git fetch origin "issue-${ISSUE_NUMBER}" --depth=1
+          git checkout -B "issue-${ISSUE_NUMBER}" "origin/issue-${ISSUE_NUMBER}"
+
+          USER_PROMPT_FILE="artifacts/${USER_COMMENT_ID}/user.md"
+          for attempt in {1..10}; do
+            if [[ -f "$USER_PROMPT_FILE" ]]; then
+              break
+            fi
+            echo "Waiting for $USER_PROMPT_FILE (attempt ${attempt}/10)"
+            git fetch origin "issue-${ISSUE_NUMBER}" --depth=1
+            git reset --hard "origin/issue-${ISSUE_NUMBER}"
+            sleep 2
+          done
+
+          if [[ ! -f "$USER_PROMPT_FILE" ]]; then
+            echo "Missing user prompt file: $USER_PROMPT_FILE"
+            ls -la artifacts || true
+            find artifacts -maxdepth 2 -type f | sort || true
+            exit 1
+          fi
+
+          USER_PROMPT_CONTENT="$(cat "$USER_PROMPT_FILE")"
+
+          npx -y @github/copilot@${{ vars.COPILOT_CLI_VERSION || '1.0.18' }} \
+            -p "請將最終結果寫入 artifacts/${COMMENT_ID}/result.md 。我的提示詞為: ${USER_PROMPT_CONTENT}" \
             --yolo --stream off --continue --output-format json \
-            > artifacts/${{ env.COMMENT_ID }}/output.jsonl \
-            2> artifacts/${{ env.COMMENT_ID }}/error.log
+            > "artifacts/${COMMENT_ID}/output.jsonl" \
+            2> "artifacts/${COMMENT_ID}/error.log"
 
       # 推送結果到 issue branch。
       - name: 推送結果
