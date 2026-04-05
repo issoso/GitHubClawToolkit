@@ -109,9 +109,50 @@ jobs:
         env:
           CODEX_HOME: ".codex"
         run: |
-          codex exec --json --yolo "請將最終結果寫入 artifacts/${{ env.COMMENT_ID }}/result.md 。我的提示詞為: $(cat artifacts/${{ env.USER_COMMENT_ID }}/user.md)" \
-            > artifacts/${{ env.COMMENT_ID }}/output.jsonl \
-            2> artifacts/${{ env.COMMENT_ID }}/error.log
+          RAW_ISSUE_NUMBER='${{ env.ISSUE_NUMBER }}'
+          RAW_COMMENT_ID='${{ env.COMMENT_ID }}'
+          RAW_USER_COMMENT_ID='${{ env.USER_COMMENT_ID }}'
+
+          ISSUE_NUMBER="${RAW_ISSUE_NUMBER%\"}"
+          ISSUE_NUMBER="${ISSUE_NUMBER#\"}"
+          COMMENT_ID="${RAW_COMMENT_ID%\"}"
+          COMMENT_ID="${COMMENT_ID#\"}"
+          USER_COMMENT_ID="${RAW_USER_COMMENT_ID%\"}"
+          USER_COMMENT_ID="${USER_COMMENT_ID#\"}"
+
+          if [[ -z "$COMMENT_ID" || -z "$USER_COMMENT_ID" ]]; then
+            echo "COMMENT_ID or USER_COMMENT_ID is missing"
+            exit 1
+          fi
+
+          mkdir -p "artifacts/${COMMENT_ID}"
+
+          git fetch origin "issue-${ISSUE_NUMBER}" --depth=1
+          git checkout -B "issue-${ISSUE_NUMBER}" "origin/issue-${ISSUE_NUMBER}"
+
+          USER_PROMPT_FILE="artifacts/${USER_COMMENT_ID}/user.md"
+          for attempt in {1..10}; do
+            if [[ -f "$USER_PROMPT_FILE" ]]; then
+              break
+            fi
+            echo "Waiting for $USER_PROMPT_FILE (attempt ${attempt}/10)"
+            git fetch origin "issue-${ISSUE_NUMBER}" --depth=1
+            git reset --hard "origin/issue-${ISSUE_NUMBER}"
+            sleep 2
+          done
+
+          if [[ ! -f "$USER_PROMPT_FILE" ]]; then
+            echo "Missing user prompt file: $USER_PROMPT_FILE"
+            ls -la artifacts || true
+            find artifacts -maxdepth 2 -type f | sort || true
+            exit 1
+          fi
+
+          USER_PROMPT_CONTENT="$(cat "$USER_PROMPT_FILE")"
+
+          codex exec --json --yolo "請將最終結果寫入 artifacts/${COMMENT_ID}/result.md 。我的提示詞為: ${USER_PROMPT_CONTENT}" \
+            > "artifacts/${COMMENT_ID}/output.jsonl" \
+            2> "artifacts/${COMMENT_ID}/error.log"
 
       # 推送結果到 issue branch。
       - name: 推送結果
@@ -134,6 +175,5 @@ jobs:
           issue_number: ${{ env.ISSUE_NUMBER }}
           comment_id: ${{ env.COMMENT_ID }}
           message_file: artifacts/${{ env.COMMENT_ID }}/result.md
-
 
 
